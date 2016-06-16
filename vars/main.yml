@@ -1,2 +1,4 @@
 ---
 # vars file for ansible-swarm-node-role
+swarm_container_tag: "1.1.2"
+swarm_node_port: "2375"

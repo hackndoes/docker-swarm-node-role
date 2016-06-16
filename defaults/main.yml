@@ -1,2 +1,4 @@
 ---
 # defaults file for ansible-swarm-node-role
+docker_registry_user: ""
+docker_registry_password: ""

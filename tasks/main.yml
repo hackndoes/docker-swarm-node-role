@@ -1,2 +1,63 @@
 ---
 # tasks file for ansible-swarm-node-role
+  - name: enable docker swarm ports in firewall
+    ufw: rule=allow port={{ item }}
+    with_items:
+    - 80
+    - 7946
+    - 4789
+
+  - name: open required ephemeral ports
+    ufw: rule=allow port=32768:65535 from_ip={{ item }} proto=tcp
+    with_items: "{{ groups['node'] }}"
+  
+  - name: open required ephemeral ports
+    ufw: rule=allow port=32768:65535 from_ip={{ item }} proto=tcp
+    with_items: "{{ groups['manager'] }}"
+
+  - name: start reload firewall
+    ufw: state=enabled
+    
+  - name: update hostname
+    hostname: name={{ ansible_eth0.ipv4.address }}
+
+  - name: download ez_setup.py
+    get_url: url=https://bootstrap.pypa.io/ez_setup.py dest=/tmp/ez_setup.py
+
+  - name: stat easy_install file
+    stat: path=/usr/local/bin/easy_install
+    register: stat_result
+
+  - name: install python-setuptools
+    command: python /tmp/ez_setup.py
+    when: not stat_result.stat.exists
+
+  - name: install pip
+    easy_install: name=pip state=present
+
+  - name: install docker-py
+    pip: name=docker-py state=latest
+
+  - name: login to private docker registry
+    docker_login:
+      registry: https://registry.ea.lab
+      username: "{{ docker_registry_user }}"
+      password: "{{ docker_registry_password }}"
+    register: result
+    until: result|success
+    retries: 5
+    delay: 5
+
+  - name: test if .dockercfg present
+    stat: path={{ ansible_user_dir }}/.dockercfg
+    register: dockercfg
+
+  - name: copy config.json to .dockercfg
+    command: cp {{ ansible_user_dir }}/.docker/config.json {{ ansible_user_dir }}/.dockercfg
+    when: dockercfg.stat.exists == False
+
+  - name: run registrator container
+    docker: image=gliderlabs/registrator name=registrator state=started volumes=/var/run/docker.sock:/tmp/docker.sock command="-ip {{ ansible_eth0.ipv4.address }} {{ service_discovery_url }}"
+
+  - name: run swarm node container
+    docker: image=swarm:{{ swarm_container_tag }} name=swarm-agent state=started command="join -addr {{ ansible_eth0.ipv4.address }}:{{ swarm_node_port }} {{ swarm_cluster_store_url }}"
