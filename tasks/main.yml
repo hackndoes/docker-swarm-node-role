@@ -39,10 +39,12 @@
     pip: name=docker-py state=latest
 
   - name: login to private docker registry
+    when: not (docker_registry_url | trim == '')
     docker_login:
-      registry: https://registry.ea.lab
+      registry: "{{ docker_registry_url }}"
       username: "{{ docker_registry_user }}"
       password: "{{ docker_registry_password }}"
+      email: "{{ docker_registry_email }}"
     register: result
     until: result|success
     retries: 5
