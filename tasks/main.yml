@@ -39,9 +39,9 @@
     pip: name=docker-py state=latest
 
   - name: login to private docker registry
-    when: not (docker_registry_url | trim == '')
+    when: not (registry_dns_url | trim == '')
     docker_login:
-      registry: "{{ docker_registry_url }}"
+      registry: "{{ registry_dns_url }}"
       username: "{{ docker_registry_user }}"
       password: "{{ docker_registry_password }}"
       email: "{{ docker_registry_email }}"
