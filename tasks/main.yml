@@ -36,7 +36,7 @@
     easy_install: name=pip state=present
 
   - name: install docker-py
-    pip: name=docker-py state=latest
+    pip: name=docker-py state=present version={{ docker_py_version }}
 
   - name: login to private docker registry
     when: not (registry_dns_url | trim == '')
@@ -62,4 +62,4 @@
     docker: image=gliderlabs/registrator name=registrator state=started volumes=/var/run/docker.sock:/tmp/docker.sock command="-ip {{ ansible_eth0.ipv4.address }} {{ service_discovery_url }}"
 
   - name: run swarm node container
-    docker: image=swarm:{{ swarm_container_tag }} name=swarm-agent state=started command="join -addr {{ ansible_eth0.ipv4.address }}:{{ swarm_node_port }} {{ swarm_cluster_store_url }}"
+    docker: image=swarm:{{ swarm_container_tag }} name=swarm-agent volumes=/etc/localtime:/etc/localtime:ro state=started command="join -addr {{ ansible_eth0.ipv4.address }}:{{ swarm_node_port }} {{ swarm_cluster_store_url }}"
